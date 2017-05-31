@@ -14,7 +14,7 @@ plugins.
 
 * Analyzers: Batch jobs (e.g., community detection, aggregations like pattern-of-life).
 
-[![Quorum](quorum.png?raw=true "Optional Title")]
+[![Quorum](quorum.png?raw=true "Optional Title")](quorum.png)
 
 
 
