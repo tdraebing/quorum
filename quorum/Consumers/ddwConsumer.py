@@ -55,7 +55,8 @@ class DataDotWorldOD(object):
         self.catalogs = [self.url+x.attrs["href"] for x in catalogs]
 
 
-    def _restart_crawl(self, checkpoint_filename, start):
+    def _restart_crawl(self, checkpoint_filename):
+        checkpoints = []
         if not os.path.isfile(checkpoint_filename):
             checkpoint_file = open(checkpoint_filename, 'w')
         else:
@@ -63,9 +64,8 @@ class DataDotWorldOD(object):
             checkpoints = checkpoint_file.readlines()
             checkpoints = [check.strip('\n') for check in checkpoints
                            if check.strip('\n')!='']
-            start = checkpoints[-1]
 
-        return checkpoint_file, start
+        return checkpoint_file, checkpoints
 
 
     def parse_catalog(self, catalog):
@@ -77,7 +77,8 @@ class DataDotWorldOD(object):
         # lgo and checkpoint files
         log_file = open(path+'/log_file.txt', 'w')
         checkpoint_filename = path+'/checkpoints_file.txt'
-        checkpoint_file, start = self._restart_crawl(checkpoint_filename, main_page)
+        checkpoint_file, start = self._restart_crawl(checkpoint_filename)
+        start = checkpoints[-1]
 
         while self.counter <= self.max_datasets or self.max_datasets<0:
             try:

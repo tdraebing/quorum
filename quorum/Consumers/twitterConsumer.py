@@ -1,7 +1,7 @@
 import os
 import datetime
 from time import sleep
-from tweepy import API, OAuthHandler, Cursor
+from tweepy import API, OAuthHandler, Cursor, TweepError
 from xvfbwrapper import Xvfb
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, TimeoutException
@@ -36,7 +36,8 @@ class TwitterConsumer:
         self.driver.quit()
 
 
-    def _restart_crawl(self, checkpoint_filename, start_date):
+    def _restart_crawl(self, checkpoint_filename):
+        checkpoints = []
         if not os.path.isfile(checkpoint_filename):
             checkpoint_file = open(checkpoint_filename, 'w')
         else:
@@ -45,11 +46,7 @@ class TwitterConsumer:
             checkpoints = [check.strip('\n') for check in checkpoints
                            if check.strip('\n')!='']
 
-            # go to last checkpoint
-            start_date = datetime.datetime.strptime(checkpoints[-1],"%Y-%m-%d %H:%M:%S")
-            print('Restarting at: {}\n'.format(start_date))
-        
-        return checkpoint_file, start_date
+        return checkpoint_file, checkpoints
 
 
     def twitter_url(self, screen_name='', no_rt=False, start='', end='', hashtag='', topics=[]):                                         
@@ -89,7 +86,8 @@ class TwitterConsumer:
         path = create_dir(urls=[screen_name], data_dir='data')                  
         checkpoint_filename = path +'/tweetIds_checkpoints_file.txt'
         ids_filename = path + '/tweetIds.jsonl'
-        checkpoint_file, start = self._restart_crawl(checkpoint_filename, start) 
+        checkpoint_file, start = self._restart_crawl(checkpoint_filename)
+        start = datetime.datetime.strptime(start[-1],"%Y-%m-%d %H:%M:%S")
 
         while start<=end:
             end_date += datetime.timedelta(days=day_step)
@@ -143,3 +141,29 @@ class TwitterConsumer:
             if ids:
                 fout.write(json.dumps(list(set(ids)))+'\n')
         return len(ids)
+
+
+    def ids_to_tweets(self, path_to_ids):
+        ids_file = path_to_ids + '/tweetIds.jsonl'
+        ftweets = path_to_ids + '/tweets.jsonl'
+        checkpoint_filename = path_to_ids + '/tweets_checkpoints_file.txt'
+        checkpoint_file, checkpoints = self._restart_crawl(checkpoint_filename)
+
+        with open(ids_file, 'r') as f, open(ftweets, 'a') as f_tweet:
+            if checkpoints:
+                f.seek(int(checkpoints[-1]))
+            
+            for line in iter(f.readline, ''):
+                checkpoint_file.write('{}\n'.format(f.tell()))
+                ids = json.loads(line)
+
+                for tweetId in ids:
+                    try:
+                        tweet = self.api.get_status(tweetId)
+                        f_tweet.write(json.dumps(tweet._json)+'\n')
+                    except TweepError as e:
+                        print(e)
+                        time.sleep(60*15)
+
+        checkpoint_file.close() 
+
