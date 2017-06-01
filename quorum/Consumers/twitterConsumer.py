@@ -1,5 +1,4 @@
 import os
-import sys
 import datetime
 from time import sleep
 from tweepy import API, OAuthHandler, Cursor
@@ -19,9 +18,7 @@ class TwitterConsumer:
         from quorum.config.config import TWITTER
         auth = OAuthHandler(TWITTER["CONSUMER_KEY"], TWITTER["CONSUMER_SECRET"])
         auth.set_access_token(TWITTER["ACCESS_TOKEN"], TWITTER["ACCESS_SECRET"])
-        api = API(auth, 
-                  wait_on_rate_limit=True, 
-                  wait_on_rate_limit_notify=True,
+        api = API(auth, wait_on_rate_limit=True,  wait_on_rate_limit_notify=True,
                   compression=True)
         return api
 
@@ -85,7 +82,40 @@ class TwitterConsumer:
             return union.join( url )
 
     
-    def _scroll_and_get_tweets(self):
+    def get_all_user_tweets(self, screen_name, hashtag='', topics=[], start, end, 
+                            day_step=2, tweet_lim=3200, no_rt=True, virtuald=False):
+   
+        self._start_driver()
+        path = create_dir(urls=[screen_name], data_dir='data')                  
+        checkpoint_filename = path +'/tweetIds_checkpoints_file.txt'
+        ids_filename = path + '/tweetIds.jsonl'
+        checkpoint_file, start = self._restart_crawl(checkpoint_filename, start) 
+
+        while start<=end:
+            end_date += datetime.timedelta(days=day_step)
+            url = twitter_url(screen_name=screen_name, no_rt=no_rt, start=start_date, 
+                              end=end_date, topics=topics)
+            try:
+                self.driver.get(url)
+
+                self._found_tweets = self._scroll_and_get_tweets()
+                self._save_tweetIds(ids_filename)         
+                
+                checkpoint_file.write( '{}\n'.format(start) )
+                start = end_date
+            except NoSuchElementException as e:
+                sleep(1*60)
+                continue
+            except TimeoutException:
+                sleep(1*60)
+                continue
+        
+        checkpoint_file.close()
+        self._terminate_driver()
+        return len(ids)
+
+
+    def _scroll_and_get_tweets(self): 
         found_tweets = self.driver.find_elements_by_css_selector('li.js-stream-item')
         increment = 10
         while len(found_tweets) >= increment:
@@ -112,38 +142,4 @@ class TwitterConsumer:
                     continue
             if ids:
                 fout.write(json.dumps(list(set(ids)))+'\n')
-
-
-
-    def get_all_user_tweets(self, screen_name, start, end, day_step=2, hashtag='', 
-                            topics=[], tweet_lim=3200, no_rt=True, virtuald=False):
-        makedir(screen_name)
-        fname_tweet_ids = 'users/{0}/usr_tweetids_{0}.jsonl'.format(screen_name)
-        fcheck = 'users/{0}/search_checkpoints_{0}.txt'.format(screen_name)
-    
-        self._start_driver()
-        check_p, start = self._restart_crawl(checkpoint_filename, start) 
-
-        while start<=end:
-            end_date += datetime.timedelta(days=day_step)
-            url = twitter_url(screen_name=screen_name, no_rt=no_rt, start=start_date, 
-                              end=end_date, topics=topics)
-            try:
-                self.driver.get(url)
-
-                self._found_tweets = self._scroll_and_get_tweets()
-
-                self._save_tweetIds(fname_tweet_ids)         
-                
-                check_p.write( '{}\n'.format(start) )
-                start = end_date
-            except NoSuchElementException as e:
-                sleep(1*60)
-                continue
-            except TimeoutException:
-                sleep(1*60)
-                continue
-        
-        check_p.close()
-        self._terminate_driver()
         return len(ids)
