@@ -13,16 +13,16 @@ class SeleniumConsumers(object):
         if isinstance(driver, str):
             self.driver = driver.lower()
         else:
-            raise TypeError('Slenium driver option invalid')
+            raise ValueError('Specify wbdriver as a string')
 
 
     def start_driver(self):
         if self.virtuald:                                                       
             self.vdisplay = Xvfb()                                             
             self.vdisplay.start()     
-        if driver=='firefox':
+        if self.driver=='firefox':
             self.driver = webdriver.Firefox()
-        elif driver=='chrome':
+        elif self.driver=='chrome':
             self.driver = webdriver.Chrome()
         else:
             raise NotImplementedError()

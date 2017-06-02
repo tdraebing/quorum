@@ -4,7 +4,7 @@ import requests
 import traceback
 from bs4 import BeautifulSoup                                                   
 from selenium.common.exceptions import WebDriverException, TimeoutException
-from quorum.cpnsumers.SeleniumConsumers import SeleniumConsumers
+from quorum.consumers.SeleniumConsumers import SeleniumConsumers
 from quorum.utils.file_utils import create_dir, safe_filename, process_files
 
 
@@ -42,24 +42,26 @@ class DataDotWorldOD(SeleniumConsumers):
 
 
     def parse_catalog(self, catalog):
-        self.driver.get(catalog)
-        main_page = self.driver.current_url
+        main_page = catalog
         path = create_dir([self.url, catalog], self.data_dir)
         self.counter, page_num = 0, 0
 
         # lgo and checkpoint files
         log_file = open(path+'/log_file.txt', 'w')
         checkpoint_filename = path+'/checkpoints_file.txt'
-        checkpoint_file, start = self.restart_crawl(checkpoint_filename)
-        start = checkpoints[-1]
+        checkpoint_file, checkpoints = self.restart_crawl(checkpoint_filename)
+        if checkpoints:
+            main_page = checkpoints[-1]
 
         while self.counter <= self.max_datasets or self.max_datasets<0:
             try:
                 page_num += 1
                 print('{}.\t{}'.format(page_num, catalog))
+        
+                self.driver.get(main_page)
+                self._parse_catalog(path)
                 
-                self.driver.get(start)
-                self._parse_catalog()
+                process_files(path, **self._kwargs)
 
                 # go to next page                                                   
                 checkpoint_file.write('{}\n'.format(previous_page))
@@ -84,7 +86,7 @@ class DataDotWorldOD(SeleniumConsumers):
         return path
    
     
-    def _parse_catalog(self):
+    def _parse_catalog(self, path):
         soup = BeautifulSoup(self.driver.page_source, "lxml")
         datasets = soup.find_all('a', class_="dw-dataset-name",href=True)
         datasets = [self.url+x.attrs["href"] for x in datasets] 
@@ -92,7 +94,7 @@ class DataDotWorldOD(SeleniumConsumers):
             if self.counter <= self.max_datasets or self.max_datasets<0:
                 self.driver.get(dataset) 
                 sleep(1) 
-                self._get_datasets()
+                dataset_link, dataset_name = self._get_datasets()
                 self._save_datasets(path, dataset_link, dataset_name.contents[0])
             else:
                 break
@@ -108,9 +110,9 @@ class DataDotWorldOD(SeleniumConsumers):
         dataset_link = soup.find_all('a', target="_blank", href=True)
         dataset_link = [d for d in dataset_link 
                         if "data-reactid" not in d.attrs.keys()]
+        return dataset_link, dataset_name
 
-   
-   def _save_datasets(self, path, links, dataset_name):
+    def _save_datasets(self, path, links, dataset_name):
         for link in links:
             file_ext = (link.contents[0]).split('.')[-1]
             if file_ext.upper() in self.formats:
