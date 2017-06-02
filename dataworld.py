@@ -37,10 +37,10 @@ crawling_args = {
     "data_lake": 'nktraining',
     "excel2csv": True,                                             
 }
+if __name__=="__main__":
+    ddw = DataDotWorldOD(**crawling_args)                                   
+    ddw.grab_opendata_catalogs()                                            
+    ddw.terminate_driver()
 
-ddw = DataDotWorldOD(**crawling_args)                                   
-ddw.grab_opendata_catalogs()                                            
-ddw.terminate_driver()
-
-for source in ddw.catalogs:
-    ddw_pipeline(source, crawling_args)
+    for source in ddw.catalogs:
+        ddw_pipeline(source, crawling_args)
