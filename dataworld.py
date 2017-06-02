@@ -32,7 +32,7 @@ crawling_args = {
     "data_dir": 'data',
     "remote_dir": 'data',
     "formats": ['XLSX','XLS','CSV'],
-    "virtuald": False,
+    "virtuald": True,
     "adl": True,
     "data_lake": 'nktraining',
     "excel2csv": True,                                             
