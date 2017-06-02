@@ -2,16 +2,16 @@ import os
 import datetime
 from time import sleep
 from tweepy import API, OAuthHandler, Cursor, TweepError
-from xvfbwrapper import Xvfb
-from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, TimeoutException
+from quorum.cpnsumers.SeleniumConsumers import SeleniumConsumers
 from quorum.utils.file_utils import create_dir
 
-class TwitterConsumer:
 
-    def __init__(self, virtuald=True):
-        self.api        = _twitter_client()
-        self.virtuald   = virtuald
+class TwitterConsumer(SeleniumConsumers):
+
+    def __init__(self, virtuald=True, driver='firefox'):
+        super().__init__(virtuald, driver) 
+        self.api = _twitter_client()
 
 
     def _twitter_client(self):
@@ -21,32 +21,6 @@ class TwitterConsumer:
         api = API(auth, wait_on_rate_limit=True,  wait_on_rate_limit_notify=True,
                   compression=True)
         return api
-
-
-    def _start_driver(self):                                                     
-        if self.virtuald:
-            self._vdisplay = Xvfb()
-            self._vdisplay.start()                                              
-        self.driver = webdriver.Firefox()
-
-
-    def _terminate_driver(self):
-        if self.virtuald:
-            self._vdisplay.stop()
-        self.driver.quit()
-
-
-    def _restart_crawl(self, checkpoint_filename):
-        checkpoints = []
-        if not os.path.isfile(checkpoint_filename):
-            checkpoint_file = open(checkpoint_filename, 'w')
-        else:
-            checkpoint_file = open(checkpoint_filename, 'r+')
-            checkpoints = checkpoint_file.readlines()
-            checkpoints = [check.strip('\n') for check in checkpoints
-                           if check.strip('\n')!='']
-
-        return checkpoint_file, checkpoints
 
 
     def twitter_url(self, screen_name='', no_rt=False, start='', end='', hashtag='', topics=[]):                                         
@@ -82,11 +56,11 @@ class TwitterConsumer:
     def get_all_user_tweets(self, screen_name, hashtag='', topics=[], start, end, 
                             day_step=2, tweet_lim=3200, no_rt=True, virtuald=False):
    
-        self._start_driver()
+        self.start_driver()
         path = create_dir(urls=[screen_name], data_dir='data')                  
         checkpoint_filename = path +'/tweetIds_checkpoints_file.txt'
         ids_filename = path + '/tweetIds.jsonl'
-        checkpoint_file, start = self._restart_crawl(checkpoint_filename)
+        checkpoint_file, start = self.restart_crawl(checkpoint_filename)
         start = datetime.datetime.strptime(start[-1],"%Y-%m-%d %H:%M:%S")
 
         while start<=end:
@@ -109,7 +83,7 @@ class TwitterConsumer:
                 continue
         
         checkpoint_file.close()
-        self._terminate_driver()
+        self.terminate_driver()
         return len(ids)
 
 
@@ -134,7 +108,7 @@ class TwitterConsumer:
 
                     if len(ids) == tweet_lim:
                         fout.write(json.dumps(list(set(ids)))+'\n')
-                        self._terminate_driver()
+                        self.terminate_driver()
                         return len(ids)
                 except StaleElementReferenceException as e:
                     continue
@@ -147,7 +121,7 @@ class TwitterConsumer:
         ids_file = path_to_ids + '/tweetIds.jsonl'
         ftweets = path_to_ids + '/tweets.jsonl'
         checkpoint_filename = path_to_ids + '/tweets_checkpoints_file.txt'
-        checkpoint_file, checkpoints = self._restart_crawl(checkpoint_filename)
+        checkpoint_file, checkpoints = self.restart_crawl(checkpoint_filename)
 
         with open(ids_file, 'r') as f, open(ftweets, 'a') as f_tweet:
             if checkpoints:

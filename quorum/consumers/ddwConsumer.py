@@ -1,45 +1,31 @@
 import os
 from time import sleep
 import requests
-from bs4 import BeautifulSoup                                                   
-from xvfbwrapper import Xvfb
-from selenium import webdriver                                                  
-from selenium.common.exceptions import WebDriverException, TimeoutException
-from selenium.webdriver.chrome.options import Options
-from ..utils.file_utils import create_dir, safe_filename, process_files
 import traceback
+from bs4 import BeautifulSoup                                                   
+from selenium.common.exceptions import WebDriverException, TimeoutException
+from quorum.cpnsumers.SeleniumConsumers import SeleniumConsumers
+from quorum.utils.file_utils import create_dir, safe_filename, process_files
 
 
-class DataDotWorldOD(object):
+class DataDotWorldOD(SeleniumConsumers):
     """ data.world Scraper
 
         Crawls through the opendata portal which contains multiple catalogs.
         Each catalog contains multiple datasets.
 
     """
-    def __init__(self, url='https://data.world', max_datasets=-1, 
-                 data_dir='data', portal='/opendata', virtuald=True, 
-                 **kwargs):
-        self.url                = url
+    def __init__(self, virtuald=True, driver='chrome', max_datasets=-1, 
+                 data_dir='data', **kwargs):
+        super().__init__(virtuald, driver)
+        self.url                = 'https://data.world'
+        self.portal             = '/opendata'
         self.max_datasets       = max_datasets
-        self.portal             = portal
         self.data_dir           = data_dir
         self.virtuald           = virtuald
         self.formats            = kwargs["formats"]
         self._kwargs            = kwargs
 
-
-    def start_driver(self):
-        if self.virtuald:
-            self._vdisplay = Xvfb()                                                       
-            self._vdisplay.start()
-        self.driver = webdriver.Chrome()
-
-    def terminate_driver(self):
-        print('Crawling done {}'.format(self.url))
-        if self.virtuald:
-            self._vdisplay.stop()
-        self.driver.quit()
 
     def get_opendata(self):
         self.start_driver()
@@ -55,19 +41,6 @@ class DataDotWorldOD(object):
         self.catalogs = [self.url+x.attrs["href"] for x in catalogs]
 
 
-    def _restart_crawl(self, checkpoint_filename):
-        checkpoints = []
-        if not os.path.isfile(checkpoint_filename):
-            checkpoint_file = open(checkpoint_filename, 'w')
-        else:
-            checkpoint_file = open(checkpoint_filename, 'r+')
-            checkpoints = checkpoint_file.readlines()
-            checkpoints = [check.strip('\n') for check in checkpoints
-                           if check.strip('\n')!='']
-
-        return checkpoint_file, checkpoints
-
-
     def parse_catalog(self, catalog):
         self.driver.get(catalog)
         main_page = self.driver.current_url
@@ -77,7 +50,7 @@ class DataDotWorldOD(object):
         # lgo and checkpoint files
         log_file = open(path+'/log_file.txt', 'w')
         checkpoint_filename = path+'/checkpoints_file.txt'
-        checkpoint_file, start = self._restart_crawl(checkpoint_filename)
+        checkpoint_file, start = self.restart_crawl(checkpoint_filename)
         start = checkpoints[-1]
 
         while self.counter <= self.max_datasets or self.max_datasets<0:
