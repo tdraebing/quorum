@@ -11,7 +11,7 @@ class SeleniumConsumers(object):
         else:
             raise TypeError('Virtual display option invalid')
         if isinstance(driver, str):
-            self.driver = driver.lower()
+            self.driver_opt = driver.lower()
         else:
             raise ValueError('Specify wbdriver as a string')
 
@@ -21,18 +21,18 @@ class SeleniumConsumers(object):
             self.vdisplay = Xvfb()                                             
             self.vdisplay.start()  
 
-        if self.driver=='firefox':
+        if self.driver_opt=='firefox':
             self.driver = webdriver.Firefox()
-        elif self.driver=='chrome':
+        elif self.driver_opt=='chrome':
             self.driver = webdriver.Chrome()
         else:
             raise NotImplementedError()
 
 
     def terminate_driver(self):                                                
+        self.driver.quit()
         if self.virtuald:
             self.vdisplay.stop()                                               
-        self.driver.quit()
 
 
     def restart_crawl(self, checkpoint_filename):
