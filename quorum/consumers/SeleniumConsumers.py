@@ -19,7 +19,8 @@ class SeleniumConsumers(object):
     def start_driver(self):
         if self.virtuald:                                                       
             self.vdisplay = Xvfb()                                             
-            self.vdisplay.start()     
+            self.vdisplay.start()  
+
         if self.driver=='firefox':
             self.driver = webdriver.Firefox()
         elif self.driver=='chrome':

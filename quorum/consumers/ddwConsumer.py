@@ -15,7 +15,7 @@ class DataDotWorldOD(SeleniumConsumers):
         Each catalog contains multiple datasets.
 
     """
-    def __init__(self, virtuald=True, driver='chrome', max_datasets=-1, 
+    def __init__(self, virtuald=True, driver='firefox', max_datasets=-1, 
                  data_dir='data', **kwargs):
         super().__init__(virtuald, driver)
         self.url                = 'https://data.world'
