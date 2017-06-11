@@ -94,7 +94,7 @@ class DataDotWorldOD(SeleniumConsumers):
                 self.driver.get(dataset) 
                 sleep(1) 
                 dataset_link, dataset_name = self._get_datasets()
-                self._save_datasets(path, dataset_link, dataset_name.contents[0])
+                self._save_datasets(path, dataset_link, dataset_name)
             else:
                 break
 
@@ -104,7 +104,11 @@ class DataDotWorldOD(SeleniumConsumers):
         soup = BeautifulSoup(self.driver.page_source, "lxml")
 
         info = self._find_all_keyword(soup, 'a', "dw-dataset", href=True)
-        author, dataset_name = info[0], info[1]
+        if info:
+            author, dataset_name = info[0], info[1]
+            dataset_name = dataset_name.contents[0]
+        else:
+            dataset_name = self.driver.current_url.split('/')[-1]
         #description = soup.find_all('span',class_="Markdown__content___3thyu")
         dataset_link = soup.find_all('a', target="_blank", href=True)
         dataset_link = [d for d in dataset_link 
