@@ -63,8 +63,8 @@ class DataDotWorldOD(SeleniumConsumers):
                 process_files(path, **self._kwargs)
 
                 # go to next page                                                   
-                checkpoint_file.write('{}\n'.format(previous_page))
-                self.driver.get(previous_page) 
+                checkpoint_file.write('{}\n'.format(main_page))
+                self.driver.get(main_page) 
                 self.driver.find_element_by_xpath('//*[@aria-label="Next"]').click()   
                 main_page = self.driver.current_url
             except WebDriverException as e:
