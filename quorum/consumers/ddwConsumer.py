@@ -26,7 +26,6 @@ class DataDotWorldOD(SeleniumConsumers):
         self.formats            = kwargs["formats"]
         self._kwargs            = kwargs
 
-
     def get_opendata(self):
         self.start_driver()
         create_dir([self.url], self.data_dir)

@@ -1,0 +1,8 @@
+FROM selenium
+
+COPY . /code
+WORKDIR /code
+RUN pip install -r requirements.txt
+
+
+CMD ["python", "dataworld.py"]
