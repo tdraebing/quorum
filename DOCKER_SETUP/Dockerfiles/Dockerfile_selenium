@@ -1,0 +1,10 @@
+FROM ubuntu_miniconda
+MAINTAINER Jorge Alarcon Ochoa
+
+
+RUN apt-get update -y && apt-get install -y xvfb firefox                        
+RUN cd /bin && \                                                                
+    curl -L https://github.com/mozilla/geckodriver/releases/download/v0.15.0/geckodriver-v0.15.0-linux64.tar.gz | tar xz && \
+    chmod +x geckodriver                                                        
+RUN echo "export PATH=$PATH:$(pwd)/bin/geckodriver" >> ~/.bashrc                
+ENV PATH $PATH:$(pwd)/bin/geckodriver

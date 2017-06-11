@@ -1,4 +1,7 @@
-consumer_key    = 'sFSeClN3kC'
-consumer_secret = 'O9teUbNBRa' 
-access_token    = '2654uI3ysj'
-access_secret   = 'jWslajVVWI'
+TWITTER = {
+    CONSUMER_KEY: 'bq9tn3gGk',
+    CONSUMER_SECRET: 'LHoCY2WuL',
+    ACCESS_TOKEN: '2463HFRYz7z',
+    ACCESS_SECRET: 'lW6hpPWyHq',
+}
+
