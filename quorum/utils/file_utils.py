@@ -6,10 +6,10 @@ import string
 from .azure_utils import get_adl_client, put_dir 
 
 
-def safe_filename(string):
+def safe_filename(name):
     safechar = set(string.printable[:-5])
-    string = ''.join(c for c in string if c.isalnum() or c in safechar).rstrip()
-    return string
+    name = ''.join(c for c in name if c.isalnum() or c in safechar).rstrip()
+    return name
 
 
 def create_dir(urls=[], data_dir='data'):                                   
