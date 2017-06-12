@@ -94,6 +94,7 @@ class DataDotWorldOD(SeleniumConsumers):
                 print(e)
                 log_file.write('{}\n'.format(e))
                 traceback.print_tb(e.__traceback__)
+                break
 
         checkpoint_file.close()
         log_file.close()
