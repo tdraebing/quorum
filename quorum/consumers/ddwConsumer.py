@@ -15,6 +15,23 @@ class DataDotWorldOD(SeleniumConsumers):
         Each catalog contains multiple datasets.
 
     """
+    opendataCatalogs = [
+        'https://data.world/opendata/data.cityofnewyork.us',
+        'https://data.world/opendata/data.austintexas.gov',
+        'https://data.world/opendata/data.cityofchicago.org',
+        'https://data.world/opendata/brigades.opendatanetwork.com',
+        'https://data.world/opendata/data.gov',
+        'https://data.world/opendata/data.acgov.org',
+        'https://data.world/opendata/data.chattlibrary.org',
+        'https://data.world/opendata/data.illinois.gov',
+        'https://data.world/opendata/data.lacity.org',
+        'https://data.world/opendata/data.lacounty.gov',
+        'https://data.world/opendata/data.livewellsd.org',
+        'https://data.world/opendata/data.oaklandnet.com',
+        'https://data.world/opendata/data.ohouston.org',
+        'https://data.world/opendata/data.results.wa.gov' 
+    ]
+
     def __init__(self, virtuald=True, driver='firefox', max_datasets=-1, 
                  data_dir='data', **kwargs):
         super().__init__(virtuald, driver)
