@@ -77,8 +77,6 @@ class DataDotWorldOD(SeleniumConsumers):
                 self.driver.get(main_page)
                 self._parse_catalog(path)
                 
-                process_files(path, **self._kwargs)
-
                 # go to next page                                                   
                 checkpoint_file.write('{}\n'.format(main_page))
                 self.driver.get(main_page) 
@@ -114,6 +112,9 @@ class DataDotWorldOD(SeleniumConsumers):
                 self._save_datasets(path, dataset_link, dataset_name)
             else:
                 break
+            # Store files
+            if self.counter%5==0:
+                process_files(path, **self._kwargs)
 
 
 
@@ -144,6 +145,7 @@ class DataDotWorldOD(SeleniumConsumers):
                         if chunk:
                             f.write(chunk)
                 self.counter += 1
+
 
 
     @staticmethod
