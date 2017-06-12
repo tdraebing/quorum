@@ -38,9 +38,8 @@ crawling_args = {
     "excel2csv": True,                                             
 }
 if __name__=="__main__":
-    ddw = DataDotWorldOD(driver='firefox', **crawling_args)                                   
-    ddw.grab_opendata_catalogs()
-    ddw.terminate_driver()
+    ddw = DataDotWorldOD(driver='chrome', **crawling_args)                                   
+    opendataCatalogs = ddw.opendataCatalogs
 
-    for source in ddw.catalogs:
+    for source in opendataCatalogs:
         ddw_pipeline(source, crawling_args)
