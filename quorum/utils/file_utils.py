@@ -7,8 +7,8 @@ from .azure_utils import get_adl_client, put_dir
 
 
 def safe_filename(name):
-    safechar = set(string.printable[:-5])
-    name = ''.join(c for c in name if c.isalnum() or c in safechar).rstrip()
+    safechar = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
+    name = ''.join(c for c in name if c in safechar).rstrip()
     return name
 
 
