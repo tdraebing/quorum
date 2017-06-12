@@ -1,17 +1,20 @@
 import os
+import json
 import datetime
 from time import sleep
 from tweepy import API, OAuthHandler, Cursor, TweepError
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, TimeoutException
-from quorum.cpnsumers.SeleniumConsumers import SeleniumConsumers
+from quorum.consumers.SeleniumConsumers import SeleniumConsumers
 from quorum.utils.file_utils import create_dir
+from quorum.utils.kafka_utils import produce_msg
 
 
 class TwitterConsumer(SeleniumConsumers):
 
-    def __init__(self, virtuald=True, driver='firefox'):
+    def __init__(self, virtuald=True, driver='firefox', kafka_topic='ttest'):
         super().__init__(virtuald, driver) 
-        self.api = _twitter_client()
+        self.topic = kafka_topic
+        self.api = self._twitter_client()
 
 
     def _twitter_client(self):
@@ -53,25 +56,28 @@ class TwitterConsumer(SeleniumConsumers):
             return union.join( url )
 
     
-    def get_all_user_tweets(self, screen_name, hashtag='', topics=[], start, end, 
-                            day_step=2, tweet_lim=3200, no_rt=True, virtuald=False):
+    def get_all_user_tweets(self, screen_name, start, end, hashtag='', topics=[], 
+                            day_step=2, tweet_lim=3200, no_rt=True):
    
         self.start_driver()
         path = create_dir(urls=[screen_name], data_dir='data')                  
         checkpoint_filename = path +'/tweetIds_checkpoints_file.txt'
         ids_filename = path + '/tweetIds.jsonl'
-        checkpoint_file, start = self.restart_crawl(checkpoint_filename)
-        start = datetime.datetime.strptime(start[-1],"%Y-%m-%d %H:%M:%S")
+        checkpoint_file, checkpoints = self.restart_crawl(checkpoint_filename)
+        if checkpoints:
+            start = datetime.datetime.strptime(checkpoints[-1],"%Y-%m-%d %H:%M:%S")
 
+        totalTweets = 0
+        end_date = start
         while start<=end:
             end_date += datetime.timedelta(days=day_step)
-            url = twitter_url(screen_name=screen_name, no_rt=no_rt, start=start_date, 
-                              end=end_date, topics=topics)
+            url = self.twitter_url(screen_name=screen_name, no_rt=no_rt, 
+                                   start=start, end=end_date, topics=topics)
             try:
                 self.driver.get(url)
 
                 self._found_tweets = self._scroll_and_get_tweets()
-                self._save_tweetIds(ids_filename)         
+                totalTweets += self._save_tweetIds(ids_filename, tweet_lim)         
                 
                 checkpoint_file.write( '{}\n'.format(start) )
                 start = end_date
@@ -84,7 +90,7 @@ class TwitterConsumer(SeleniumConsumers):
         
         checkpoint_file.close()
         self.terminate_driver()
-        return len(ids)
+        return totalTweets
 
 
     def _scroll_and_get_tweets(self): 
@@ -98,7 +104,7 @@ class TwitterConsumer(SeleniumConsumers):
         return found_tweets
 
 
-    def _save_tweetIds(self, filename):
+    def _save_tweetIds(self, filename, tweet_lim):
         ids = []
         with open(filename, 'a') as fout:
             for tweet in self._found_tweets:
@@ -108,12 +114,16 @@ class TwitterConsumer(SeleniumConsumers):
 
                     if len(ids) == tweet_lim:
                         fout.write(json.dumps(list(set(ids)))+'\n')
+                        for id in list(set(ids)):
+                            produce_msg(self.topic, id)
                         self.terminate_driver()
                         return len(ids)
                 except StaleElementReferenceException as e:
                     continue
             if ids:
                 fout.write(json.dumps(list(set(ids)))+'\n')
+                for id in list(set(ids)):
+                    produce_msg(self.topic, id)
         return len(ids)
 
 
