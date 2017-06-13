@@ -4,11 +4,11 @@ import requests
 import traceback
 from bs4 import BeautifulSoup                                                   
 from selenium.common.exceptions import WebDriverException, TimeoutException
-from quorum.consumers.SeleniumConsumers import SeleniumConsumers
+from quorum.producers.SeleniumProducer import SeleniumProducers
 from quorum.utils.file_utils import create_dir, safe_filename, process_files
 
 
-class DataDotWorldOD(SeleniumConsumers):
+class DataDotWorldOD(SeleniumProducers):
     """ data.world Scraper
 
         Crawls through the opendata portal which contains multiple catalogs.

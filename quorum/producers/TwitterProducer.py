@@ -4,12 +4,12 @@ import datetime
 from time import sleep
 from tweepy import API, OAuthHandler, Cursor, TweepError
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, TimeoutException
-from quorum.consumers.SeleniumConsumers import SeleniumConsumers
+from quorum.producers.SeleniumProducer import SeleniumProducers
 from quorum.utils.file_utils import create_dir
-from quorum.utils.kafka_utils import produce_msg
+from quorum.utils.kafka_utils import produce_iterator
 
 
-class TwitterConsumer(SeleniumConsumers):
+class TwitterProducer(SeleniumProducers):
 
     def __init__(self, virtuald=True, driver='firefox', kafka_topic='ttest'):
         super().__init__(virtuald, driver) 
@@ -114,16 +114,14 @@ class TwitterConsumer(SeleniumConsumers):
 
                     if len(ids) == tweet_lim:
                         fout.write(json.dumps(list(set(ids)))+'\n')
-                        for id in list(set(ids)):
-                            produce_msg(self.topic, id)
+                        produce_iterator(self.topic, set(ids))
                         self.terminate_driver()
                         return len(ids)
                 except StaleElementReferenceException as e:
                     continue
             if ids:
                 fout.write(json.dumps(list(set(ids)))+'\n')
-                for id in list(set(ids)):
-                    produce_msg(self.topic, id)
+                produce_iterator(self.topic, set(ids))
         return len(ids)
 
 
@@ -145,6 +143,7 @@ class TwitterConsumer(SeleniumConsumers):
                     try:
                         tweet = self.api.get_status(tweetId)
                         f_tweet.write(json.dumps(tweet._json)+'\n')
+                        produce_iterator(self.topic, json.dumps(tweet._json))
                     except TweepError as e:
                         print(e)
                         time.sleep(60*15)
