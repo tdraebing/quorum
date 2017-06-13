@@ -61,7 +61,7 @@ class TwitterProducer(SeleniumProducers):
             return union.join( url )
 
     
-    def get_all_user_tweets(self, screen_name, produceTopic start, end, topics=[], 
+    def get_all_user_tweets(self, screen_name, produceTopic, start, end, topics=[], 
                             day_step=2, tweet_lim=3200, no_rt=True):
    
         self.start_driver()
