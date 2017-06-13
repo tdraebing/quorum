@@ -1,4 +1,5 @@
 import os
+from time import sleep
 from sys import version_info
 import xlrd                                                                     
 import csv
@@ -61,13 +62,17 @@ def process_files(path, **kwargs):
         convert_excel2csv(os.path.abspath(local_dir))                           
                                                                                 
     # Store data in Azure data lake                                             
-    if kwargs["adl"] and os.path.exists(local_dir):                             
-        try:
-            adl = get_adl_client(kwargs["data_lake"])                               
-            put_dir(adl, local_dir, remote_dir)                                     
-            # delete all files except log and checkpoint files                      
-            clean_up(local_dir)
-        except Exception as e:
-            print('Error while storing files to Data lake -> process_files()')
-            print(e)
+    if kwargs["adl"] and os.path.exists(local_dir):                            
+        while True:
+            try:
+                adl = get_adl_client(kwargs["data_lake"])                               
+                put_dir(adl, local_dir, remote_dir)                                     
+                # delete all files except log and checkpoint files                      
+                clean_up(local_dir)
+                break
+            except Exception as e:
+                print('Error while storing files to Data lake -> process_files()')
+                print(e)
+                sleep(60*5)
+                continue
 

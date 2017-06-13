@@ -33,7 +33,7 @@ class DataDotWorldOD(SeleniumProducers):
     ]
 
     def __init__(self, virtuald=True, driver='firefox', max_datasets=-1, 
-                 data_dir='data', **kwargs):
+                 data_dir='data', upload_freq=3, **kwargs):
         super().__init__(virtuald, driver)
         self.url                = 'https://data.world'
         self.portal             = '/opendata'
@@ -41,6 +41,7 @@ class DataDotWorldOD(SeleniumProducers):
         self.data_dir           = data_dir
         self.virtuald           = virtuald
         self.formats            = kwargs["formats"]
+        self.upload_freq        = upload_freq
         self._kwargs            = kwargs
 
     def get_opendata(self):
@@ -115,7 +116,7 @@ class DataDotWorldOD(SeleniumProducers):
             else:
                 break
             # Store files
-            if self.counter%5==0:
+            if self.counter%self.upload_freq==0:
                 process_files(path, **self._kwargs)
 
 

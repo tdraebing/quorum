@@ -3,17 +3,24 @@ import json
 import datetime
 from time import sleep
 from tweepy import API, OAuthHandler, Cursor, TweepError
+from kafka import KafkaConsumer
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, TimeoutException
 from quorum.producers.SeleniumProducer import SeleniumProducers
 from quorum.utils.file_utils import create_dir
-from quorum.utils.kafka_utils import produce_iterator
+from quorum.utils.kafka_utils import produce_iterator, terminate_producer, singal_msg, produce_element
 
 
 class TwitterProducer(SeleniumProducers):
+    """
+    TwitterProducer.api
+    TwitterProducer.get_all_user_tweets(screen_name, produceTopic, start, end, 
+                                        topics=[], day_step=2, tweet_lim=3200, 
+                                        no_rt=True)
+    TwitterProducer.ids_to_tweets(consumeTopic, produceTopic)
+    """
 
     def __init__(self, virtuald=True, driver='firefox', kafka_topic='ttest'):
         super().__init__(virtuald, driver) 
-        self.topic = kafka_topic
         self.api = self._twitter_client()
 
 
@@ -26,12 +33,10 @@ class TwitterProducer(SeleniumProducers):
         return api
 
 
-    def twitter_url(self, screen_name='', no_rt=False, start='', end='', hashtag='', topics=[]):                                         
+    def twitter_url(self, screen_name='', no_rt=True, start='', end='', hashtag='', topics=[]):                                         
         # join url parts                                                            
         union = '%20'                                                               
         union_topic = '%20OR%20'                                                    
-        
-        # construct the various parts of the search url                             
         url = ['https://twitter.com/search?f=tweets&q=']                            
         if hashtag:                                                                 
             url.append('%23' + hashtag.strip('#') + '%20')                          
@@ -56,13 +61,12 @@ class TwitterProducer(SeleniumProducers):
             return union.join( url )
 
     
-    def get_all_user_tweets(self, screen_name, start, end, hashtag='', topics=[], 
+    def get_all_user_tweets(self, screen_name, produceTopic start, end, topics=[], 
                             day_step=2, tweet_lim=3200, no_rt=True):
    
         self.start_driver()
         path = create_dir(urls=[screen_name], data_dir='data')                  
         checkpoint_filename = path +'/tweetIds_checkpoints_file.txt'
-        ids_filename = path + '/tweetIds.jsonl'
         checkpoint_file, checkpoints = self.restart_crawl(checkpoint_filename)
         if checkpoints:
             start = datetime.datetime.strptime(checkpoints[-1],"%Y-%m-%d %H:%M:%S")
@@ -77,7 +81,7 @@ class TwitterProducer(SeleniumProducers):
                 self.driver.get(url)
 
                 self._found_tweets = self._scroll_and_get_tweets()
-                totalTweets += self._save_tweetIds(ids_filename, tweet_lim)         
+                totalTweets += self._save_tweetIds(produceTopic, tweet_lim)         
                 
                 checkpoint_file.write( '{}\n'.format(start) )
                 start = end_date
@@ -104,49 +108,32 @@ class TwitterProducer(SeleniumProducers):
         return found_tweets
 
 
-    def _save_tweetIds(self, filename, tweet_lim):
+    def _save_tweetIds(self, produceTopic, tweet_lim):
         ids = []
-        with open(filename, 'a') as fout:
-            for tweet in self._found_tweets:
-                try:
-                    tweet_id = tweet.get_attribute('data-item-id')
-                    ids.append(tweet_id)
+        for tweet in self._found_tweets:
+            try:
+                tweet_id = tweet.get_attribute('data-item-id')
+                ids.append(tweet_id)
 
-                    if len(ids) == tweet_lim:
-                        fout.write(json.dumps(list(set(ids)))+'\n')
-                        produce_iterator(self.topic, set(ids))
-                        self.terminate_driver()
-                        return len(ids)
-                except StaleElementReferenceException as e:
-                    continue
-            if ids:
-                fout.write(json.dumps(list(set(ids)))+'\n')
-                produce_iterator(self.topic, set(ids))
+                if len(ids) == tweet_lim:
+                    produce_iterator(produceTopic, set(ids))
+                    terminate_producer(produceTopic)
+                    self.terminate_driver()
+                    return len(ids)
+            except StaleElementReferenceException as e:
+                continue
+        if ids:
+            produce_iterator(produceTopic, set(ids))
+            terminate_producer(produceTopic) 
         return len(ids)
 
 
-    def ids_to_tweets(self, path_to_ids):
-        ids_file = path_to_ids + '/tweetIds.jsonl'
-        ftweets = path_to_ids + '/tweets.jsonl'
-        checkpoint_filename = path_to_ids + '/tweets_checkpoints_file.txt'
-        checkpoint_file, checkpoints = self.restart_crawl(checkpoint_filename)
-
-        with open(ids_file, 'r') as f, open(ftweets, 'a') as f_tweet:
-            if checkpoints:
-                f.seek(int(checkpoints[-1]))
-            
-            for line in iter(f.readline, ''):
-                checkpoint_file.write('{}\n'.format(f.tell()))
-                ids = json.loads(line)
-
-                for tweetId in ids:
-                    try:
-                        tweet = self.api.get_status(tweetId)
-                        f_tweet.write(json.dumps(tweet._json)+'\n')
-                        produce_iterator(self.topic, json.dumps(tweet._json))
-                    except TweepError as e:
-                        print(e)
-                        time.sleep(60*15)
-
-        checkpoint_file.close() 
+    def ids_to_tweets(self, consumeTopic, produceTopic):
+        consumer = KafkaConsumer(consumeTopic, auto_offset_reset='earliest')        
+        for msg in consumer:                                                        
+            if msg.value.decode('utf-8')==singal_msg:
+                break
+            tweet = self.api.get_status(msg.value.decode('utf-8'))               
+            produce_element(produceTopic, tweet._json)
+        
 
