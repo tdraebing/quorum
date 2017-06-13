@@ -69,11 +69,12 @@ class DataDotWorldOD(SeleniumProducers):
         checkpoint_file, checkpoints = self.restart_crawl(checkpoint_filename)
         if checkpoints:
             main_page = checkpoints[-1]
+            page_num += len(checkpoints)
 
         while self.counter <= self.max_datasets or self.max_datasets<0:
             try:
                 page_num += 1
-                print('{}.\t{}'.format(page_num, catalog))
+                print('{}.\t{}'.format(page_num, main_page))
         
                 self.driver.get(main_page)
                 self._parse_catalog(path)
