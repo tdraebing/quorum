@@ -1,0 +1,10 @@
+# git config --global core.excludesfile .gitignore_global
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# backups
+*.sw[op]
+
+# logs
+*.log
