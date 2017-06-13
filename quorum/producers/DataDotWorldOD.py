@@ -69,7 +69,7 @@ class DataDotWorldOD(SeleniumProducers):
         checkpoint_file, checkpoints = self.restart_crawl(checkpoint_filename)
         if checkpoints:
             main_page = checkpoints[-1]
-            page_num += len(checkpoints)
+            page_num += len(checkpoints)-1
 
         while self.counter <= self.max_datasets or self.max_datasets<0:
             try:
