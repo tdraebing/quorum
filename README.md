@@ -13,9 +13,12 @@ and leaves the specifics of data acquisition, augmentation, and analysis to thir
 plugins. 
 
 ## Components
-* Consumers: Data ingestion (i.e., scrapers).
+Following the [Kafka](https://kafka.apache.org/) architecture we have:
 
-* Processors: Item processing (e.g., entity extraction, mention extraction).
+
+* Produers: Data ingestion (i.e., scrapers).
+
+* Consumers: Item processing (e.g., entity extraction, mention extraction).
 
 * Analyzers: Batch jobs (e.g., community detection, aggregations like pattern-of-life).
 
