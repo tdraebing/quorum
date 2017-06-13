@@ -1,6 +1,6 @@
 from itertools import repeat
 from multiprocessing import freeze_support, Pool, cpu_count 
-from quorum.consumers.ddwConsumer import DataDotWorldOD
+from quorum.producers.DataDotWorldOD import DataDotWorldOD
 
 
 def ckan_pipeline(source, crawling_args):
