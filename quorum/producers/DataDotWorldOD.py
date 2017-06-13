@@ -4,17 +4,34 @@ import requests
 import traceback
 from bs4 import BeautifulSoup                                                   
 from selenium.common.exceptions import WebDriverException, TimeoutException
-from quorum.consumers.SeleniumConsumers import SeleniumConsumers
+from quorum.producers.SeleniumProducer import SeleniumProducers
 from quorum.utils.file_utils import create_dir, safe_filename, process_files
 
 
-class DataDotWorldOD(SeleniumConsumers):
+class DataDotWorldOD(SeleniumProducers):
     """ data.world Scraper
 
         Crawls through the opendata portal which contains multiple catalogs.
         Each catalog contains multiple datasets.
 
     """
+    opendataCatalogs = [
+        'https://data.world/opendata/data.cityofnewyork.us',
+        'https://data.world/opendata/data.austintexas.gov',
+        'https://data.world/opendata/data.cityofchicago.org',
+        'https://data.world/opendata/brigades.opendatanetwork.com',
+        'https://data.world/opendata/data.gov',
+        'https://data.world/opendata/data.acgov.org',
+        'https://data.world/opendata/data.chattlibrary.org',
+        'https://data.world/opendata/data.illinois.gov',
+        'https://data.world/opendata/data.lacity.org',
+        'https://data.world/opendata/data.lacounty.gov',
+        'https://data.world/opendata/data.livewellsd.org',
+        'https://data.world/opendata/data.oaklandnet.com',
+        'https://data.world/opendata/data.ohouston.org',
+        'https://data.world/opendata/data.results.wa.gov' 
+    ]
+
     def __init__(self, virtuald=True, driver='firefox', max_datasets=-1, 
                  data_dir='data', **kwargs):
         super().__init__(virtuald, driver)
@@ -60,11 +77,9 @@ class DataDotWorldOD(SeleniumConsumers):
                 self.driver.get(main_page)
                 self._parse_catalog(path)
                 
-                process_files(path, **self._kwargs)
-
                 # go to next page                                                   
-                checkpoint_file.write('{}\n'.format(previous_page))
-                self.driver.get(previous_page) 
+                checkpoint_file.write('{}\n'.format(main_page))
+                self.driver.get(main_page) 
                 self.driver.find_element_by_xpath('//*[@aria-label="Next"]').click()   
                 main_page = self.driver.current_url
             except WebDriverException as e:
@@ -79,6 +94,7 @@ class DataDotWorldOD(SeleniumConsumers):
                 print(e)
                 log_file.write('{}\n'.format(e))
                 traceback.print_tb(e.__traceback__)
+                break
 
         checkpoint_file.close()
         log_file.close()
@@ -94,9 +110,12 @@ class DataDotWorldOD(SeleniumConsumers):
                 self.driver.get(dataset) 
                 sleep(1) 
                 dataset_link, dataset_name = self._get_datasets()
-                self._save_datasets(path, dataset_link, dataset_name.contents[0])
+                self._save_datasets(path, dataset_link, dataset_name)
             else:
                 break
+            # Store files
+            if self.counter%5==0:
+                process_files(path, **self._kwargs)
 
 
 
@@ -104,7 +123,11 @@ class DataDotWorldOD(SeleniumConsumers):
         soup = BeautifulSoup(self.driver.page_source, "lxml")
 
         info = self._find_all_keyword(soup, 'a', "dw-dataset", href=True)
-        author, dataset_name = info[0], info[1]
+        if info:
+            author, dataset_name = info[0], info[1]
+            dataset_name = dataset_name.contents[0]
+        else:
+            dataset_name = self.driver.current_url.split('/')[-1]
         #description = soup.find_all('span',class_="Markdown__content___3thyu")
         dataset_link = soup.find_all('a', target="_blank", href=True)
         dataset_link = [d for d in dataset_link 
@@ -123,6 +146,7 @@ class DataDotWorldOD(SeleniumConsumers):
                         if chunk:
                             f.write(chunk)
                 self.counter += 1
+
 
 
     @staticmethod

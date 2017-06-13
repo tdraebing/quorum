@@ -2,12 +2,14 @@ import os
 from sys import version_info
 import xlrd                                                                     
 import csv
+import string
 from .azure_utils import get_adl_client, put_dir 
 
 
-def safe_filename(string):
-    safechar = [' ', '.', '_']
-    return ''.join(c for c in string if c.isalnum() or c in safechar ).rstrip()
+def safe_filename(name):
+    safechar = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-.;<=>?@[]^_`{|}~'
+    name = ''.join(c for c in name if c in safechar).rstrip()
+    return name
 
 
 def create_dir(urls=[], data_dir='data'):                                   
@@ -60,7 +62,12 @@ def process_files(path, **kwargs):
                                                                                 
     # Store data in Azure data lake                                             
     if kwargs["adl"] and os.path.exists(local_dir):                             
-        adl = get_adl_client(kwargs["data_lake"])                               
-        put_dir(adl, local_dir, remote_dir)                                     
-        # delete all files except log and checkpoint files                      
-        clean_up(local_dir)
+        try:
+            adl = get_adl_client(kwargs["data_lake"])                               
+            put_dir(adl, local_dir, remote_dir)                                     
+            # delete all files except log and checkpoint files                      
+            clean_up(local_dir)
+        except Exception as e:
+            print('Error while storing files to Data lake -> process_files()')
+            print(e)
+

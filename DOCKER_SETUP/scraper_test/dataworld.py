@@ -1,6 +1,6 @@
 from itertools import repeat
 from multiprocessing import freeze_support, Pool, cpu_count 
-from quorum.consumers.ddwConsumer import DataDotWorldOD
+from quorum.producers.DataDotWorldOD import DataDotWorldOD
 
 
 def ckan_pipeline(source, crawling_args):
@@ -39,8 +39,7 @@ crawling_args = {
 }
 if __name__=="__main__":
     ddw = DataDotWorldOD(driver='firefox', **crawling_args)                                   
-    ddw.grab_opendata_catalogs()
-    ddw.terminate_driver()
+    opendataCatalogs = ddw.opendataCatalogs
 
-    for source in ddw.catalogs:
+    for source in opendataCatalogs:
         ddw_pipeline(source, crawling_args)

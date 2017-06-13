@@ -3,7 +3,7 @@ from xvfbwrapper import Xvfb
 from selenium import webdriver 
 
 
-class SeleniumConsumers(object):
+class SeleniumProducers(object):
 
     def __init__(self, virtuald=None, driver=''):
         if isinstance(virtuald, bool):
