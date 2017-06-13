@@ -18,6 +18,6 @@ sudo docker build -t selenium -f Dockerfile_selenium . |& tee ../logs/SELENIUM_I
 cd ../../
 cp ${basedir}/Dockerfile_ddw .
 sudo docker build -t ddw -f Dockerfile_ddw . |& tee DOCKER_SETUP/logs/SCRAPER_IMAGE.txt
-sudo docker run -it -v $(pwd)/scraper_data:/code/data ddw
+sudo docker run -it -v $(pwd)/scraper_data:/code/data ddw |& tee DDW_RUN.txt
 
 popd
