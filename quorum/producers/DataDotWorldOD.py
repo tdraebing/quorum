@@ -91,12 +91,13 @@ class DataDotWorldOD(SeleniumProducers):
                 traceback.print_tb(e.__traceback__)
                 break
             except TimeoutException:
-                sleep(60)
+                sleep(60*5)
                 continue
             except Exception as e:
                 print(e)
                 log_file.write('{}\n'.format(e))
                 traceback.print_tb(e.__traceback__)
+                sleep(60*5)
                 break
 
         checkpoint_file.close()
