@@ -61,7 +61,7 @@ class DataDotWorldOD(SeleniumProducers):
     def parse_catalog(self, catalog):
         main_page = catalog
         path = create_dir([self.url, catalog], self.data_dir)
-        self.counter, page_num = 0, 0
+        self.counter, page_num = 0, 1
 
         # lgo and checkpoint files
         log_file = open(path+'/log_file.txt', 'w')
@@ -73,7 +73,6 @@ class DataDotWorldOD(SeleniumProducers):
 
         while self.counter <= self.max_datasets or self.max_datasets<0:
             try:
-                page_num += 1
                 print('{}.\t{}'.format(page_num, main_page))
         
                 self.driver.get(main_page)
@@ -84,6 +83,7 @@ class DataDotWorldOD(SeleniumProducers):
                 self.driver.get(main_page)
                 sleep(2)
                 self.driver.find_element_by_xpath('//*[@aria-label="Next"]').click()   
+                page_num += 1
                 main_page = self.driver.current_url
             except WebDriverException as e:
                 print(e)
@@ -91,6 +91,7 @@ class DataDotWorldOD(SeleniumProducers):
                 traceback.print_tb(e.__traceback__)
                 break
             except TimeoutException:
+                print("bro... there was a timeout!")
                 sleep(60*5)
                 continue
             except Exception as e:
