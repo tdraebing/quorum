@@ -7,7 +7,7 @@ from kafka import KafkaConsumer
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, TimeoutException
 from quorum.producers.SeleniumProducer import SeleniumProducers
 from quorum.utils.file_utils import create_dir
-from quorum.utils.kafka_utils import produce_iterator, terminate_producer, singal_msg, produce_element
+from quorum.utils.kafka_utils import produce_iterator, terminate_producer, signal_msg, produce_element
 
 
 class TwitterProducer(SeleniumProducers):
@@ -67,7 +67,7 @@ class TwitterProducer(SeleniumProducers):
 
         totalTweets = 0
         end_date = start
-        while start<=end:
+        while start<=end and totalTweets<=tweet_lim:
             end_date += datetime.timedelta(days=day_step)
             url = self.twitter_url(screen_name=screen_name, no_rt=no_rt, 
                                    start=start, end=end_date, topics=topics)
@@ -108,11 +108,6 @@ class TwitterProducer(SeleniumProducers):
                 tweet_id = tweet.get_attribute('data-item-id')
                 ids.append(tweet_id)
 
-                if len(ids) == tweet_lim:
-                    produce_iterator(produceTopic, set(ids))
-                    terminate_producer(produceTopic)
-                    self.terminate_driver()
-                    return len(ids)
             except StaleElementReferenceException as e:
                 continue
         if ids:
@@ -121,11 +116,14 @@ class TwitterProducer(SeleniumProducers):
 
 
     def ids_to_tweets(self, consumeTopic, produceTopic):
+        c=0
         consumer = KafkaConsumer(consumeTopic, auto_offset_reset='earliest')        
         for msg in consumer:                                                        
-            if msg.value.decode('utf-8')==singal_msg:
+            if msg.value.decode('utf-8')==signal_msg:
                 break
             tweet = self.api.get_status(msg.value.decode('utf-8'))               
             produce_element(produceTopic, json.dumps(tweet._json))
+            c+=1
+            print(c)
         
 

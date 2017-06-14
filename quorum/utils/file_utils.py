@@ -63,7 +63,8 @@ def process_files(path, **kwargs):
                                                 
     # Convert excel files to csv                                                
     if kwargs["excel2csv"] and os.path.exists(local_dir):                       
-                                                                                
+        convert_excel2csv(os.path.abspath(local_dir))
+
     # Store data in Azure data lake                                             
     if kwargs["adl"] and os.path.exists(local_dir):                            
         while True:
