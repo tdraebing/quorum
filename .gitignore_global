@@ -8,3 +8,9 @@ __pycache__/
 
 # logs
 *.log
+
+
+# libs
+venv
+data
+KAFKA/kafka_2.11-0.10.2.0
