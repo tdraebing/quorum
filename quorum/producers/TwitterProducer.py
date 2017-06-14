@@ -19,7 +19,7 @@ class TwitterProducer(SeleniumProducers):
     TwitterProducer.ids_to_tweets(consumeTopic, produceTopic)
     """
 
-    def __init__(self, virtuald=True, driver='firefox', kafka_topic='ttest'):
+    def __init__(self, virtuald=True, driver='firefox'):
         super().__init__(virtuald, driver) 
         self.api = self._twitter_client()
 
@@ -54,7 +54,6 @@ class TwitterProducer(SeleniumProducers):
             url.append( '&src=typd' )                                               
         else:                                                                       
             url.append( 'include%3Aretweet&src=typd' )                              
-                                                                                
         if hashtag:                                                                 
             return ''.join( url )                                                   
         else:                                                                       
@@ -63,13 +62,8 @@ class TwitterProducer(SeleniumProducers):
     
     def get_all_user_tweets(self, screen_name, produceTopic, start, end, topics=[], 
                             day_step=2, tweet_lim=3200, no_rt=True):
-   
         self.start_driver()
         path = create_dir(urls=[screen_name], data_dir='data')                  
-        checkpoint_filename = path +'/tweetIds_checkpoints_file.txt'
-        checkpoint_file, checkpoints = self.restart_crawl(checkpoint_filename)
-        if checkpoints:
-            start = datetime.datetime.strptime(checkpoints[-1],"%Y-%m-%d %H:%M:%S")
 
         totalTweets = 0
         end_date = start
@@ -83,7 +77,6 @@ class TwitterProducer(SeleniumProducers):
                 self._found_tweets = self._scroll_and_get_tweets()
                 totalTweets += self._save_tweetIds(produceTopic, tweet_lim)         
                 
-                checkpoint_file.write( '{}\n'.format(start) )
                 start = end_date
             except NoSuchElementException as e:
                 sleep(1*60)
@@ -91,8 +84,8 @@ class TwitterProducer(SeleniumProducers):
             except TimeoutException:
                 sleep(1*60)
                 continue
-        
-        checkpoint_file.close()
+       
+        terminate_producer(produceTopic)
         self.terminate_driver()
         return totalTweets
 
@@ -124,7 +117,6 @@ class TwitterProducer(SeleniumProducers):
                 continue
         if ids:
             produce_iterator(produceTopic, set(ids))
-            terminate_producer(produceTopic) 
         return len(ids)
 
 
@@ -134,6 +126,6 @@ class TwitterProducer(SeleniumProducers):
             if msg.value.decode('utf-8')==singal_msg:
                 break
             tweet = self.api.get_status(msg.value.decode('utf-8'))               
-            produce_element(produceTopic, tweet._json)
+            produce_element(produceTopic, json.dumps(tweet._json))
         
 
