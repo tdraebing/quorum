@@ -3,12 +3,11 @@ from time import sleep
 from sys import version_info
 import xlrd                                                                     
 import csv
-import string
 from .azure_utils import get_adl_client, put_dir 
 
 
 def safe_filename(name):
-    safechar = string.ascii_lowercase + string.ascii_uppercase + string.digits
+    safechar = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._'
     name = ''.join(c for c in name if c in safechar).rstrip()
     return name
 
