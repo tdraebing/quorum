@@ -121,6 +121,7 @@ class DataDotWorldOD(SeleniumProducers):
             # Store files
             if self.counter%self.upload_freq==0:
                 process_files(path, **self._kwargs)
+        process_files(path, **self._kwargs)
 
 
 

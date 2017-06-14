@@ -1,6 +1,6 @@
 #!/bin/bash
 
-KAFKA_HOME=/home/alarcj/Documents/datasci/quorum/KAFKA
+KAFKA_HOME=/home/alarcj/Documents/datasci/quorum/KAFKA/kafka_2.11-0.10.2.0
 
 topics=($(${KAFKA_HOME}/bin/kafka-topics.sh --list --zookeeper localhost:2181))
 total=${#topics[*]}
