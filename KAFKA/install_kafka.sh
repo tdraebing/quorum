@@ -15,5 +15,5 @@ sudo apt-get install -y zookeeperd
 
 # Download Kafka
 curl http://apache.spinellicreations.com/kafka/0.10.2.0/kafka_2.11-0.10.2.0.tgz | tar xz
-cd /kafka_2.11-0.10.2.0
+cd kafka_2.11-0.10.2.0
 
