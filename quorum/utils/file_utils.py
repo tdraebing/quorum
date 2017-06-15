@@ -3,7 +3,7 @@ from time import sleep
 from sys import version_info
 import xlrd                                                                     
 import csv
-from .azure_utils import get_adl_client, put_dir 
+from quorum.utils.azure_utils import get_adl_client, put_dir 
 
 
 def safe_filename(name):
