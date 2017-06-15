@@ -63,7 +63,6 @@ class TwitterProducer(SeleniumProducers):
     def get_all_user_tweets(self, screen_name, produceTopic, start, end, topics=[], 
                             day_step=2, tweet_lim=3200, no_rt=True):
         self.start_driver()
-        path = create_dir(urls=[screen_name], data_dir='data')                  
 
         totalTweets = 0
         end_date = start
@@ -75,7 +74,7 @@ class TwitterProducer(SeleniumProducers):
                 self.driver.get(url)
 
                 self._found_tweets = self._scroll_and_get_tweets()
-                totalTweets += self._save_tweetIds(produceTopic, tweet_lim)         
+                totalTweets += self._save_tweetIds(produceTopic, tweet_lim) 
                 
                 start = end_date
             except NoSuchElementException as e:
@@ -101,9 +100,9 @@ class TwitterProducer(SeleniumProducers):
         return found_tweets
 
 
-    def _save_tweetIds(self, produceTopic, tweet_lim):
+    def _save_tweetIds(self, produceTopic, tweet_lim): 
         ids = []
-        for tweet in self._found_tweets:
+        for tweet in self._found_tweets: 
             try:
                 tweet_id = tweet.get_attribute('data-item-id')
                 ids.append(tweet_id)
@@ -117,13 +116,15 @@ class TwitterProducer(SeleniumProducers):
 
     def ids_to_tweets(self, consumeTopic, produceTopic):
         c=0
-        consumer = KafkaConsumer(consumeTopic, auto_offset_reset='earliest')        
-        for msg in consumer:                                                        
+        consumer = KafkaConsumer(consumeTopic, auto_offset_reset='earliest',
+                                 enable_auto_commit=False)  
+        for msg in consumer:
             if msg.value.decode('utf-8')==signal_msg:
                 break
-            tweet = self.api.get_status(msg.value.decode('utf-8'))               
+            tweet = self.api.get_status(msg.value.decode('utf-8'))    
             produce_element(produceTopic, json.dumps(tweet._json))
             c+=1
-            print(c)
+        print('ids to tweets: ',c)
+        terminate_producer(produceTopic)
         
 
