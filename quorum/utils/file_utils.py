@@ -1,13 +1,13 @@
 import os
+from time import sleep
 from sys import version_info
 import xlrd                                                                     
 import csv
-import string
-from .azure_utils import get_adl_client, put_dir 
+from quorum.utils.azure_utils import get_adl_client, put_dir 
 
 
 def safe_filename(name):
-    safechar = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-.;<=>?@[]^_`{|}~'
+    safechar = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._'
     name = ''.join(c for c in name if c in safechar).rstrip()
     return name
 
@@ -48,7 +48,12 @@ def convert_excel2csv(path):
         f = os.path.join(path, f)
         filename, extension = '.'.join(f.split('.')[:-1]), f.split('.')[-1].upper()
         if 'XLSX' in extension or 'XLS' in extension:
-            excel_to_csv(f, filename+'.csv')
+            try:
+                excel_to_csv(f, filename+'.csv')
+            except Exception as e:
+                print("Problem while converting excel to csv")                      
+                print(e)                                                            
+                pass
             os.remove(f)
 
 
@@ -58,16 +63,20 @@ def process_files(path, **kwargs):
                                                 
     # Convert excel files to csv                                                
     if kwargs["excel2csv"] and os.path.exists(local_dir):                       
-        convert_excel2csv(os.path.abspath(local_dir))                           
-                                                                                
+        convert_excel2csv(os.path.abspath(local_dir))
+
     # Store data in Azure data lake                                             
-    if kwargs["adl"] and os.path.exists(local_dir):                             
-        try:
-            adl = get_adl_client(kwargs["data_lake"])                               
-            put_dir(adl, local_dir, remote_dir)                                     
-            # delete all files except log and checkpoint files                      
-            clean_up(local_dir)
-        except Exception as e:
-            print('Error while storing files to Data lake -> process_files()')
-            print(e)
+    if kwargs["adl"] and os.path.exists(local_dir):                            
+        while True:
+            try:
+                adl = get_adl_client(kwargs["data_lake"])                               
+                put_dir(adl, local_dir, remote_dir)                                     
+                # delete all files except log and checkpoint files                      
+                clean_up(local_dir)
+                break
+            except Exception as e:
+                print('Error while storing files to Data lake -> process_files()')
+                print(e)
+                sleep(60*5)
+                continue
 

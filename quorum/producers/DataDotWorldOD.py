@@ -33,7 +33,7 @@ class DataDotWorldOD(SeleniumProducers):
     ]
 
     def __init__(self, virtuald=True, driver='firefox', max_datasets=-1, 
-                 data_dir='data', **kwargs):
+                 data_dir='data', upload_freq=3, **kwargs):
         super().__init__(virtuald, driver)
         self.url                = 'https://data.world'
         self.portal             = '/opendata'
@@ -41,6 +41,7 @@ class DataDotWorldOD(SeleniumProducers):
         self.data_dir           = data_dir
         self.virtuald           = virtuald
         self.formats            = kwargs["formats"]
+        self.upload_freq        = upload_freq
         self._kwargs            = kwargs
 
     def get_opendata(self):
@@ -60,7 +61,7 @@ class DataDotWorldOD(SeleniumProducers):
     def parse_catalog(self, catalog):
         main_page = catalog
         path = create_dir([self.url, catalog], self.data_dir)
-        self.counter, page_num = 0, 0
+        self.counter, page_num = 0, 1
 
         # lgo and checkpoint files
         log_file = open(path+'/log_file.txt', 'w')
@@ -68,19 +69,21 @@ class DataDotWorldOD(SeleniumProducers):
         checkpoint_file, checkpoints = self.restart_crawl(checkpoint_filename)
         if checkpoints:
             main_page = checkpoints[-1]
+            page_num += len(checkpoints)-1
 
         while self.counter <= self.max_datasets or self.max_datasets<0:
             try:
-                page_num += 1
-                print('{}.\t{}'.format(page_num, catalog))
+                print('{}.\t{}'.format(page_num, main_page))
         
                 self.driver.get(main_page)
                 self._parse_catalog(path)
                 
                 # go to next page                                                   
                 checkpoint_file.write('{}\n'.format(main_page))
-                self.driver.get(main_page) 
+                self.driver.get(main_page)
+                sleep(2)
                 self.driver.find_element_by_xpath('//*[@aria-label="Next"]').click()   
+                page_num += 1
                 main_page = self.driver.current_url
             except WebDriverException as e:
                 print(e)
@@ -88,12 +91,14 @@ class DataDotWorldOD(SeleniumProducers):
                 traceback.print_tb(e.__traceback__)
                 break
             except TimeoutException:
-                sleep(60)
+                print("bro... there was a timeout!")
+                sleep(60*5)
                 continue
             except Exception as e:
                 print(e)
                 log_file.write('{}\n'.format(e))
                 traceback.print_tb(e.__traceback__)
+                sleep(60*5)
                 break
 
         checkpoint_file.close()
@@ -114,8 +119,9 @@ class DataDotWorldOD(SeleniumProducers):
             else:
                 break
             # Store files
-            if self.counter%5==0:
+            if self.counter%self.upload_freq==0:
                 process_files(path, **self._kwargs)
+        process_files(path, **self._kwargs)
 
 
 

@@ -44,5 +44,4 @@ class SeleniumProducers(object):
             checkpoints = checkpoint_file.readlines()
             checkpoints = [check.strip('\n') for check in checkpoints
                            if check.strip('\n')!='']
-
         return checkpoint_file, checkpoints

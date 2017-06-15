@@ -1,0 +1,16 @@
+# git config --global core.excludesfile .gitignore_global
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# backups
+*.sw[op]
+
+# logs
+*.log
+
+
+# libs
+venv
+data
+KAFKA/kafka_2.11-0.10.2.0

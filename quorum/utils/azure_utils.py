@@ -16,6 +16,7 @@ def get_adl_client(store_name, client_id=None, client_secret=None, tenant_id=Non
 
 def put_dir(client, local_dir_path, destination_dir):                           
     files = [f for f in listdir(local_dir_path) if isfile(join(local_dir_path, f))]
-                                                                                
+    files = [f for f in files if 'log_file.txt' not in f and 'checkpoints_file.txt' not in f]
+
     for f in files:                                                             
         client.put(join(local_dir_path, f), join(destination_dir, f))
