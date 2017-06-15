@@ -1,0 +1,7 @@
+FROM ubuntu_miniconda
+
+ADD requirements.txt /code/requirements.txt
+ADD ./test_celery /code/
+WORKDIR /code
+RUN pip install -r requirements.txt
+ENTRYPOINT celery -A test_celery worker --loglevel=info
