@@ -7,16 +7,19 @@ from kafka import KafkaConsumer
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, TimeoutException
 from quorum.producers.SeleniumProducer import SeleniumProducers
 from quorum.utils.file_utils import create_dir
-from quorum.utils.kafka_utils import produce_iterator, terminate_producer, signal_msg, produce_element
+from quorum.utils.kafka_utils import (produce_iterator, terminate_producer, 
+                                      signal_msg, produce_element, generate_topic)
 
 
 class TwitterProducer(SeleniumProducers):
     """
     TwitterProducer.api
-    TwitterProducer.get_all_user_tweets(screen_name, produceTopic, start, end, 
-                                        topics=[], day_step=2, tweet_lim=3200, 
-                                        no_rt=True)
+    TwitterProducer.get_tweet_ids(screen_name, produceTopic, start, end, 
+                                  topics=[], day_step=2, tweet_lim=3200, 
+                                  no_rt=True)
     TwitterProducer.ids_to_tweets(consumeTopic, produceTopic)
+    TwitterProducer.get_tweets(self, screen_name, start, end, topics=[], 
+                               day_step=2, tweet_lim=3200,  no_rt=True)
     """
 
     def __init__(self, virtuald=True, driver='firefox'):
@@ -60,8 +63,8 @@ class TwitterProducer(SeleniumProducers):
             return union.join( url )
 
     
-    def get_all_user_tweets(self, screen_name, produceTopic, start, end, topics=[], 
-                            day_step=2, tweet_lim=3200, no_rt=True):
+    def get_tweet_ids(self, screen_name, produceTopic, start, end, topics=[], 
+                      day_step=2, tweet_lim=3200, no_rt=True):
         self.start_driver()
 
         totalTweets = 0
@@ -115,7 +118,6 @@ class TwitterProducer(SeleniumProducers):
 
 
     def ids_to_tweets(self, consumeTopic, produceTopic):
-        c=0
         consumer = KafkaConsumer(consumeTopic, auto_offset_reset='earliest',
                                  enable_auto_commit=False)  
         for msg in consumer:
@@ -123,8 +125,16 @@ class TwitterProducer(SeleniumProducers):
                 break
             tweet = self.api.get_status(msg.value.decode('utf-8'))    
             produce_element(produceTopic, json.dumps(tweet._json))
-            c+=1
-        print('ids to tweets: ',c)
         terminate_producer(produceTopic)
-        
 
+
+    def get_tweets(self, screen_name, start, end, topics=[], day_step=2, 
+                   tweet_lim=3200,  no_rt=True):
+        idsTopic = generate_topic() 
+        tweetsTopic = generate_topic()                                              
+            
+        tweets = self.get_tweet_ids(screen_name, idsTopic, start, end, 
+                                    topics=topics, day_step=day_step, 
+                                    tweet_lim=3200, no_rt=no_rt)                      
+        self.ids_to_tweets(idsTopic, tweetsTopic) 
+        return tweetsTopic, tweets
