@@ -84,7 +84,10 @@ class DataDotWorldOD(SeleniumProducers):
                 sleep(2)
                 self.driver.find_element_by_xpath('//*[@aria-label="Next"]').click()   
                 page_num += 1
+                prev_page = main_page
                 main_page = self.driver.current_url
+                if main_page==prev_page:
+                    break
             except WebDriverException as e:
                 print(e)
                 log_file.write('{}\n'.format(e))
