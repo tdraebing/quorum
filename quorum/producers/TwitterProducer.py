@@ -64,12 +64,13 @@ class TwitterProducer(SeleniumProducers):
 
     
     def get_tweet_ids(self, screen_name, produceTopic, start, end, topics=[], 
-                      day_step=2, tweet_lim=3200, no_rt=True):
+                      day_step=2, tweet_lim=3200, no_rt=True,
+                      terminate_kafkaTopic=False):
         self.start_driver()
 
         totalTweets = 0
         end_date = start
-        while start<=end and totalTweets<=tweet_lim:
+        while start<=end and (totalTweets<=tweet_lim or 0>tweet_lim):
             end_date += datetime.timedelta(days=day_step)
             url = self.twitter_url(screen_name=screen_name, no_rt=no_rt, 
                                    start=start, end=end_date, topics=topics)
@@ -86,8 +87,8 @@ class TwitterProducer(SeleniumProducers):
             except TimeoutException:
                 sleep(1*60)
                 continue
-       
-        terminate_producer(produceTopic)
+        if terminate_kafkaTopic:
+            terminate_producer(produceTopic)
         self.terminate_driver()
         return totalTweets
 
@@ -123,15 +124,20 @@ class TwitterProducer(SeleniumProducers):
         for msg in consumer:
             if msg.value.decode('utf-8')==signal_msg:
                 break
-            tweet = self.api.get_status(msg.value.decode('utf-8'))    
-            produce_element(produceTopic, json.dumps(tweet._json))
+            try:
+                tweet = self.api.get_status(msg.value.decode('utf-8'))    
+                produce_element(produceTopic, json.dumps(tweet._json))
+            except TweepError as e:
+                print(e)
+                sleep(15*60)
         terminate_producer(produceTopic)
 
 
-    def get_tweets(self, screen_name, start, end, topics=[], day_step=2, 
-                   tweet_lim=3200,  no_rt=True):
-        idsTopic = generate_topic() 
-        tweetsTopic = generate_topic()                                              
+    def get_tweets(self, screen_name, start, end, idsTopic='', tweetsTopic='', 
+                   topics=[], day_step=2, tweet_lim=3200,  no_rt=True):
+        if not idsTopic and not tweetsTopic:
+            idsTopic = generate_topic() 
+            tweetsTopic = generate_topic()                                              
             
         tweets = self.get_tweet_ids(screen_name, idsTopic, start, end, 
                                     topics=topics, day_step=day_step, 
