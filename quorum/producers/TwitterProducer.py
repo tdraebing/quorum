@@ -56,7 +56,7 @@ class TwitterProducer(SeleniumProducers):
         if no_rt:                                                                   
             url.append( '&src=typd' )                                               
         else:                                                                       
-            url.append( 'include%3Aretweet&src=typd' )                              
+            url.append( 'include%3Aretweets&src=typd' )                              
         if hashtag:                                                                 
             return ''.join( url )                                                   
         else:                                                                       
